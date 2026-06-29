@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Universal Number System Converter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════════
+   TOKENS
+══════════════════════════════════════════════════════════ */
+:root {
+  --bg:          #050b18;
+  --bg2:         #090f1f;
+  --card:        #0c1528;
+  --card-hover:  #0f1c35;
+  --glass:       rgba(12,21,40,0.82);
+  --glass-light: rgba(255,255,255,0.03);
+
+  --indigo:      #6366f1;
+  --indigo-dim:  #4f46e5;
+  --indigo-pale: rgba(99,102,241,0.15);
+  --indigo-glow: rgba(99,102,241,0.35);
+
+  --violet:      #8b5cf6;
+  --cyan:        #22d3ee;
+  --emerald:     #10b981;
+  --amber:       #f59e0b;
+  --rose:        #f43f5e;
+  --rose-pale:   rgba(244,63,94,0.15);
+  --rose-glow:   rgba(244,63,94,0.30);
+
+  --text:        #e2e8f0;
+  --text2:       #94a3b8;
+  --text3:       #475569;
+  --text-acc:    #a5b4fc;
+
+  --border:      rgba(99,102,241,0.12);
+  --border2:     rgba(99,102,241,0.28);
+  --border-err:  rgba(244,63,94,0.45);
+
+  --font-ui:     'Space Grotesk', system-ui, sans-serif;
+  --font-mono:   'Fira Code', monospace;
+
+  --r:           14px;
+  --r-sm:        8px;
+  --ease:        cubic-bezier(0.4,0,0.2,1);
+}
+
+/* ══════════════════════════════════════════════════════════
+   RESET
+══════════════════════════════════════════════════════════ */
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { font-size:16px; scroll-behavior:smooth; }
+body {
+  font-family: var(--font-ui);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ══════════════════════════════════════════════════════════
+   ANIMATED CANVAS BACKGROUND
+══════════════════════════════════════════════════════════ */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* ══════════════════════════════════════════════════════════
+   GRID OVERLAY
+══════════════════════════════════════════════════════════ */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(99,102,241,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99,102,241,0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+/* ══════════════════════════════════════════════════════════
+   APP SHELL
+══════════════════════════════════════════════════════════ */
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ══════════════════════════════════════════════════════════
+   HEADER
+══════════════════════════════════════════════════════════ */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(5,11,24,0.75);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border);
+}
+
+.header-inner {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-orb {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.logo-orb svg {
+  width: 100%;
+  height: 100%;
+  animation: spin-slow 12s linear infinite;
+}
+
+@keyframes spin-slow { to { transform: rotate(360deg); } }
+
+.logo-orb-inner {
+  position: absolute;
+  inset: 9px;
+  background: linear-gradient(135deg, var(--indigo), var(--violet));
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.logo-text h1 {
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  line-height: 1.1;
+}
+
+.logo-text p {
+  font-size: 0.72rem;
+  color: var(--text3);
+  margin-top: 1px;
+}
+
+/* Header right */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Live decimal badge */
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--indigo-pale);
+  border: 1px solid var(--border2);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  color: var(--text-acc);
+  transition: all 0.2s var(--ease);
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--text3);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+
+.live-badge.active .live-dot {
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+  animation: pulse-dot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,100% { opacity:1; transform:scale(1); }
+  50%      { opacity:0.5; transform:scale(0.7); }
+}
+
+/* Clear button */
+.btn-clear {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: var(--r-sm);
+  border: 1px solid rgba(244,63,94,0.3);
+  background: rgba(244,63,94,0.07);
+  color: #fb7185;
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s var(--ease);
+  letter-spacing: 0.01em;
+}
+
+.btn-clear:hover {
+  background: rgba(244,63,94,0.18);
+  border-color: var(--rose);
+  box-shadow: 0 0 16px var(--rose-glow);
+  transform: translateY(-1px);
+}
+
+.btn-clear:active { transform: scale(0.97) translateY(0); }
+
+/* ══════════════════════════════════════════════════════════
+   HERO BANNER
+══════════════════════════════════════════════════════════ */
+.hero {
+  text-align: center;
+  padding: 3.5rem 1.5rem 2rem;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-acc);
+  margin-bottom: 1.25rem;
+}
+
+.hero-eyebrow::before,
+.hero-eyebrow::after {
+  content: '';
+  width: 32px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--indigo));
+}
+
+.hero-eyebrow::after { background: linear-gradient(90deg, var(--indigo), transparent); }
+
+.hero h2 {
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #e2e8f0 0%, #a5b4fc 40%, #8b5cf6 80%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.hero p {
+  font-size: 1rem;
+  color: var(--text3);
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+/* ══════════════════════════════════════════════════════════
+   BASE RING VISUALIZER
+══════════════════════════════════════════════════════════ */
+.visualizer-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 0.5rem 1.5rem 2rem;
+}
+
+#base-ring {
+  width: min(500px, 90vw);
+  height: min(500px, 90vw);
+  flex-shrink: 0;
+}
+
+/* ══════════════════════════════════════════════════════════
+   MAIN GRID
+══════════════════════════════════════════════════════════ */
+main {
+  flex: 1;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 1.5rem 4rem;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text3);
+}
+
+.section-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 2.5rem;
+}
+
+@media (max-width: 700px) {
+  .cards-row { grid-template-columns: 1fr; }
+  .cards-grid { grid-template-columns: 1fr; }
+}
+
+/* ══════════════════════════════════════════════════════════
+   CARD
+══════════════════════════════════════════════════════════ */
+.card {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 20px 22px 18px;
+  overflow: hidden;
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease), transform 0.2s var(--ease), background 0.2s var(--ease);
+  cursor: default;
+}
+
+/* Shimmer line at top */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--indigo) 50%, transparent 100%);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+}
+
+/* Corner decoration */
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0;
+  width: 80px; height: 80px;
+  background: radial-gradient(circle at top right, var(--indigo-pale), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s var(--ease);
+  pointer-events: none;
+}
+
+.card:hover {
+  background: var(--card-hover);
+  border-color: var(--border2);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px var(--indigo-pale);
+}
+
+.card:hover::before,
+.card:hover::after { opacity: 1; }
+
+.card.is-active {
+  border-color: var(--indigo);
+  background: var(--card-hover);
+  box-shadow:
+    0 0 0 1px var(--indigo-pale),
+    0 0 32px var(--indigo-glow),
+    0 8px 48px rgba(0,0,0,0.5);
+  transform: translateY(-2px);
+}
+
+.card.is-active::before { opacity: 1; }
+.card.is-active::after  { opacity: 1; }
+
+.card.has-error {
+  border-color: var(--rose);
+  box-shadow:
+    0 0 0 1px var(--rose-pale),
+    0 0 24px var(--rose-glow),
+    0 8px 32px rgba(0,0,0,0.5);
+}
+
+.card.has-error::before {
+  background: linear-gradient(90deg, transparent 0%, var(--rose) 50%, transparent 100%);
+  opacity: 1;
+}
+
+.card.has-error::after {
+  background: radial-gradient(circle at top right, var(--rose-pale), transparent 70%);
+  opacity: 1;
+}
+
+/* Card inner corner badge */
+.card-badge {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-family: var(--font-mono);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--text3);
+  background: rgba(99,102,241,0.07);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 7px;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.card.is-active .card-badge {
+  color: var(--text-acc);
+  border-color: var(--border2);
+  background: var(--indigo-pale);
+}
+
+/* Card header */
+.card-head {
+  margin-bottom: 16px;
+  padding-right: 64px;
+}
+
+.card-icon {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: var(--indigo-pale);
+  border: 1px solid rgba(99,102,241,0.2);
+  display: flex; align-items: center; justify-content: center;
+  margin-bottom: 12px;
+  transition: all 0.2s var(--ease);
+}
+
+.card.is-active .card-icon {
+  background: var(--indigo);
+  border-color: var(--indigo);
+  box-shadow: 0 0 16px var(--indigo-glow);
+}
+
+.card-icon svg { width:16px; height:16px; stroke: var(--text-acc); }
+.card.is-active .card-icon svg { stroke: #fff; }
+
+.card-name {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.02em;
+  margin-bottom: 2px;
+}
+
+.card-desc {
+  font-size: 0.72rem;
+  color: var(--text3);
+  font-family: var(--font-mono);
+}
+
+/* Input */
+.inp-wrap { position: relative; }
+
+.field {
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--text);
+  background: rgba(5,11,24,0.7);
+  border: 1px solid rgba(99,102,241,0.15);
+  border-radius: var(--r-sm);
+  padding: 11px 14px;
+  outline: none;
+  transition: all 0.18s var(--ease);
+  letter-spacing: 0.04em;
+}
+
+.field::placeholder { color: var(--text3); font-weight: 400; letter-spacing: 0; }
+
+.field:focus {
+  border-color: var(--indigo);
+  background: rgba(5,11,24,0.9);
+  box-shadow: 0 0 0 3px var(--indigo-glow), inset 0 1px 0 rgba(99,102,241,0.08);
+}
+
+.field.is-error {
+  border-color: var(--rose);
+  background: rgba(5,11,24,0.9);
+  color: #fda4af;
+  box-shadow: 0 0 0 3px var(--rose-glow);
+}
+
+/* Error bar */
+.err-bar {
+  margin-top: 8px;
+  min-height: 18px;
+  font-size: 0.72rem;
+  color: #fda4af;
+  font-family: var(--font-ui);
+  display: flex; align-items: flex-start; gap: 5px;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity 0.18s var(--ease), transform 0.18s var(--ease);
+  line-height: 1.4;
+}
+
+.err-bar.show { opacity: 1; transform: translateY(0); }
+
+.err-bar::before { content: '⚠'; font-size: 11px; margin-top: 1px; flex-shrink: 0; }
+
+/* Digit progress bar */
+.digit-bar {
+  height: 2px;
+  background: rgba(99,102,241,0.1);
+  border-radius: 1px;
+  margin-top: 10px;
+  overflow: hidden;
+}
+
+.digit-fill {
+  height: 100%;
+  border-radius: 1px;
+  background: linear-gradient(90deg, var(--indigo), var(--violet));
+  width: 0%;
+  transition: width 0.3s var(--ease);
+}
+
+.card.has-error .digit-fill {
+  background: linear-gradient(90deg, var(--rose), #fb923c);
+}
+
+/* ══════════════════════════════════════════════════════════
+   SEXAGESIMAL CARD
+══════════════════════════════════════════════════════════ */
+.sex-segments {
+  display: flex;
+  gap: 6px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.sex-seg {
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(99,102,241,0.08);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text3);
+  transition: all 0.2s;
+}
+
+.sex-seg.active {
+  background: var(--indigo-pale);
+  border-color: var(--border2);
+  color: var(--text-acc);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ROMAN CARD
+══════════════════════════════════════════════════════════ */
+.roman-display {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 4px;
+  position: relative;
+}
+
+.roman-value {
+  font-family: var(--font-mono);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--text-acc);
+  letter-spacing: 0.06em;
+  line-height: 1;
+  transition: all 0.3s var(--ease);
+  text-shadow: 0 0 32px var(--indigo-glow);
+}
+
+.roman-value.empty { color: var(--text3); font-size: 1.5rem; font-weight: 400; }
+
+.roman-locked {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: #fda4af;
+}
+
+.roman-locked.show { display: flex; }
+
+.roman-locked svg { width:16px; height:16px; stroke: currentColor; flex-shrink:0; }
+
+/* Roman numeral decomposition pills */
+.roman-decomp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.roman-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--indigo-pale);
+  border: 1px solid var(--border2);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-acc);
+  animation: pill-in 0.25s var(--ease) both;
+}
+
+.roman-pill .pill-sym { font-weight: 700; }
+.roman-pill .pill-val { color: var(--text3); font-size: 0.65rem; }
+
+@keyframes pill-in {
+  from { opacity:0; transform: scale(0.8) translateY(4px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   STATUS BAR
+══════════════════════════════════════════════════════════ */
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: rgba(12,21,40,0.7);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  font-size: 0.8125rem;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  margin-top: 0;
+  backdrop-filter: blur(8px);
+  transition: all 0.2s var(--ease);
+}
+
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--text3);
+  flex-shrink: 0;
+  transition: all 0.3s;
+}
+
+.status-bar.ok   { border-color: rgba(16,185,129,0.25); color: var(--text2); }
+.status-bar.ok   .status-dot { background: var(--emerald); box-shadow: 0 0 8px var(--emerald); }
+.status-bar.err  { border-color: var(--border-err); color: #fda4af; }
+.status-bar.err  .status-dot { background: var(--rose); box-shadow: 0 0 8px var(--rose); }
+
+/* ══════════════════════════════════════════════════════════
+   SCROLLBAR
+══════════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width:5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--text3); border-radius:3px; }
+
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE
+══════════════════════════════════════════════════════════ */
+@media (max-width:600px) {
+  .header-inner { padding: 0 1rem; }
+  .hero { padding: 2rem 1rem 1rem; }
+  .hero h2 { font-size: 1.75rem; }
+  main { padding: 0 1rem 3rem; }
+  .live-badge span:not(.live-dot) { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration:0.01ms !important; animation-duration:0.01ms !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- Animated canvas background -->
+<canvas id="bg-canvas"></canvas>
+<div class="grid-overlay"></div>
+
+<div class="app">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-orb">
+          <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="22" cy="22" r="20" stroke="rgba(99,102,241,0.4)" stroke-width="1" stroke-dasharray="4 3"/>
+            <circle cx="22" cy="22" r="14" stroke="rgba(139,92,246,0.3)" stroke-width="0.75" stroke-dasharray="2 4"/>
+          </svg>
+          <div class="logo-orb-inner">∑</div>
+        </div>
+        <div class="logo-text">
+          <h1>Universal Number Converter</h1>
+          <p>8 number systems · Real-time · BigInt precision</p>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="live-badge" id="liveBadge">
+          <span class="live-dot"></span>
+          <span id="liveVal">—</span>
+        </div>
+        <button class="btn-clear" id="btnClear">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+          Clear all
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-eyebrow">Positional &amp; Non-Positional Systems</div>
+    <h2>Numbers in Every Base</h2>
+    <p>Type any value below and watch it ripple across Binary, Octal, Decimal, Hex and beyond — simultaneously.</p>
+  </div>
+
+  <!-- ── BASE RING ── -->
+  <div class="visualizer-wrap">
+    <canvas id="base-ring" width="500" height="500" aria-label="Base ring visualizer showing current value across number bases"></canvas>
+  </div>
+
+  <main>
+
+    <!-- POSITIONAL SECTION -->
+    <div class="section-label">Positional Systems (bi-directional)</div>
+
+    <div class="cards-grid" id="grid-pos">
+
+      <!-- Binary -->
+      <div class="card" id="card-bin">
+        <div class="card-badge">Base‑2</div>
+        <div class="card-head">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><text x="3" y="17" font-family="monospace" font-size="14" fill="currentColor" stroke="none">01</text></svg>
+          </div>
+          <div class="card-name">Binary</div>
+          <div class="card-desc">digits: 0, 1</div>
+        </div>
+        <div class="inp-wrap">
+          <input type="text" id="inp-bin" class="field" placeholder="e.g. 11111111" autocomplete="off" spellcheck="false" aria-label="Binary">
+        </div>
+        <div class="digit-bar"><div class="digit-fill" id="fill-bin"></div></div>
+        <div class="err-bar" id="err-bin" aria-live="polite"></div>
+      </div>
+
+      <!-- Octal -->
+      <div class="card" id="card-oct">
+        <div class="card-badge">Base‑8</div>
+        <div class="card-head">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 4v16M4 12h16"/></svg>
+          </div>
+          <div class="card-name">Octal</div>
+          <div class="card-desc">digits: 0 – 7</div>
+        </div>
+        <div class="inp-wrap">
+          <input type="text" id="inp-oct" class="field" placeholder="e.g. 377" autocomplete="off" spellcheck="false" aria-label="Octal">
+        </div>
+        <div class="digit-bar"><div class="digit-fill" id="fill-oct"></div></div>
+        <div class="err-bar" id="err-oct" aria-live="polite"></div>
+      </div>
+
+      <!-- Decimal -->
+      <div class="card" id="card-dec">
+        <div class="card-badge" style="color:var(--text-acc);border-color:var(--border2);background:var(--indigo-pale)">Base‑10</div>
+        <div class="card-head">
+          <div class="card-icon" style="background:var(--indigo);border-color:var(--indigo);box-shadow:0 0 16px var(--indigo-glow)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <div class="card-name" style="color:var(--text-acc)">Decimal</div>
+          <div class="card-desc">digits: 0 – 9 · standard</div>
+        </div>
+        <div class="inp-wrap">
+          <input type="text" id="inp-dec" class="field" placeholder="e.g. 255" autocomplete="off" spellcheck="false" inputmode="numeric" aria-label="Decimal">
+        </div>
+        <div class="digit-bar"><div class="digit-fill" id="fill-dec"></div></div>
+        <div class="err-bar" id="err-dec" aria-live="polite"></div>
+      </div>
+
+      <!-- Duodecimal -->
+      <div class="card" id="card-duo">
+        <div class="card-badge">Base‑12</div>
+        <div class="card-head">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+          </div>
+          <div class="card-name">Duodecimal</div>
+          <div class="card-desc">digits: 0–9, A, B</div>
+        </div>
+        <div class="inp-wrap">
+          <input type="text" id="inp-duo" class="field" placeholder="e.g. 193" autocomplete="off" spellcheck="false" aria-label="Duodecimal">
+        </div>
+        <div class="digit-bar"><div class="digit-fill" id="fill-duo"></div></div>
+        <div class="err-bar" id="err-duo" aria-live="polite"></div>
+      </div>
+
+      <!-- Hexadecimal -->
+      <div class="card" id="card-hex">
+        <div class="card-badge">Base‑16</div>
+        <div class="card-head">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+          </div>
+          <div class="card-name">Hexadecimal</div>
+          <div class="card-desc">digits: 0–9, A–F</div>
+        </div>
+        <div class="inp-wrap">
+          <input type="text" id="inp-hex" class="field" placeholder="e.g. FF" autocomplete="off" spellcheck="false" aria-label="Hexadecimal">
+        </div>
+        <div class="digit-bar"><div class="digit-fill" id="fill-hex"></div></div>
+        <div class="err-bar" id="err-hex" aria-live="polite"></div>
+      </div>
+
+      <!-- Vigesimal -->
+      <div class="card" id="card-vig">
+        <div class="card-badge">Base‑20</div>
+        <div class="card-head">
+          <div class="card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </div>
+          <div class="card-name">Vigesimal</div>
+          <div class="card-desc">digits: 0–9, A–J</div>
+        </div>
+        <div class="inp-wrap">
+          <input type="text" id="inp-vig" class="field" placeholder="e.g. CF" autocomplete="off" spellcheck="false" aria-label="Vigesimal">
+        </div>
+        <div class="digit-bar"><div class="digit-fill" id="fill-vig"></div></div>
+        <div class="err-bar" id="err-vig" aria-live="polite"></div>
+      </div>
+
+    </div><!-- /cards-grid -->
+
+    <!-- Sexagesimal row -->
+    <div class="cards-row" id="grid-sex">
+      <div class="card" id="card-sex" style="grid-column:1/-1">
+        <div class="card-badge">Base‑60</div>
+        <div class="card-head" style="display:flex;align-items:center;gap:14px;padding-right:0">
+          <div class="card-icon" style="flex-shrink:0;margin-bottom:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div>
+            <div class="card-name">Sexagesimal</div>
+            <div class="card-desc">colon-separated segments, each 0–59 &nbsp;·&nbsp; e.g. <span style="color:var(--text-acc)">1:25</span> = 85 decimal</div>
+          </div>
+        </div>
+        <div class="inp-wrap" style="margin-top:16px">
+          <input type="text" id="inp-sex" class="field" placeholder="e.g.  1:25  or  1:04:15" autocomplete="off" spellcheck="false" aria-label="Sexagesimal">
+        </div>
+        <div class="sex-segments" id="sex-segs"></div>
+        <div class="digit-bar" style="margin-top:8px"><div class="digit-fill" id="fill-sex"></div></div>
+        <div class="err-bar" id="err-sex" aria-live="polite"></div>
+      </div>
+    </div>
+
+    <!-- NON-POSITIONAL SECTION -->
+    <div class="section-label" style="margin-top:0.5rem">Non-Positional Systems (output only)</div>
+
+    <div class="cards-row">
+
+      <!-- Roman Numerals -->
+      <div class="card card--roman" id="card-roman" style="grid-column:1/-1">
+        <div class="card-badge" id="romanBadge">1 – 3,999</div>
+        <div class="card-head" style="display:flex;align-items:center;gap:14px;padding-right:0">
+          <div class="card-icon" style="flex-shrink:0;margin-bottom:0">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+          </div>
+          <div>
+            <div class="card-name">Roman Numerals</div>
+            <div class="card-desc">Standard subtractive notation · M CM D CD C XC L XL X IX V IV I</div>
+          </div>
+        </div>
+        <div class="roman-display">
+          <div class="roman-value empty" id="romanValue">—</div>
+          <div class="roman-locked" id="romanLocked">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Out of Roman range (1 – 3,999)
+          </div>
+        </div>
+        <div class="roman-decomp" id="romanDecomp"></div>
+      </div>
+
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar" id="statusBar">
+      <span class="status-dot"></span>
+      <span id="statusText">Ready — type a number in any field above</span>
+    </div>
+
+  </main>
+</div><!-- /app -->
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   CANVAS BACKGROUND — Floating particles + orbital rings
+════════════════════════════════════════════════════════════ */
+(function() {
+  const c = document.getElementById('bg-canvas');
+  const ctx = c.getContext('2d');
+  let W, H, particles, rings;
+
+  function resize() {
+    W = c.width  = window.innerWidth;
+    H = c.height = window.innerHeight;
+  }
+
+  function mkParticles() {
+    particles = Array.from({length: 80}, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      r: Math.random() * 1.5 + 0.3,
+      vx: (Math.random() - 0.5) * 0.18,
+      vy: (Math.random() - 0.5) * 0.18,
+      a: Math.random(),
+      color: Math.random() > 0.5 ? [99,102,241] : [139,92,246]
+    }));
+    rings = [
+      { x: W*0.85, y: H*0.15, r: 180, speed: 0.0004, angle: 0, dashes: 20, color:'rgba(99,102,241,0.07)' },
+      { x: W*0.1,  y: H*0.75, r: 140, speed: -0.0006, angle: 1, dashes: 14, color:'rgba(139,92,246,0.05)' },
+      { x: W*0.5,  y: H*0.5,  r: 240, speed: 0.0002, angle: 2, dashes: 28, color:'rgba(34,211,238,0.04)' },
+    ];
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Rings
+    rings.forEach(ring => {
+      ring.angle += ring.speed;
+      ctx.save();
+      ctx.translate(ring.x, ring.y);
+      ctx.rotate(ring.angle);
+      ctx.setLineDash([ring.r * Math.PI * 2 / (ring.dashes * 2), ring.r * Math.PI * 2 / (ring.dashes * 2)]);
+      ctx.beginPath();
+      ctx.arc(0, 0, ring.r, 0, Math.PI * 2);
+      ctx.strokeStyle = ring.color;
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.restore();
+    });
+
+    // Particles
+    particles.forEach(p => {
+      p.x += p.vx; p.y += p.vy;
+      if (p.x < 0) p.x = W; if (p.x > W) p.x = 0;
+      if (p.y < 0) p.y = H; if (p.y > H) p.y = 0;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color[0]},${p.color[1]},${p.color[2]},${p.a * 0.55})`;
+      ctx.fill();
+    });
+
+    requestAnimationFrame(draw);
+  }
+
+  window.addEventListener('resize', () => { resize(); mkParticles(); });
+  resize(); mkParticles(); draw();
+})();
+
+/* ════════════════════════════════════════════════════════════
+   BASE RING VISUALIZER
+════════════════════════════════════════════════════════════ */
+const ringCanvas  = document.getElementById('base-ring');
+const ringCtx     = ringCanvas.getContext('2d');
+const RING_SIZE   = 500;
+ringCanvas.width  = RING_SIZE;
+ringCanvas.height = RING_SIZE;
+
+const RING_SYSTEMS = [
+  { id:'bin', label:'Binary',  base:2,  color:'#6366f1', fill:'rgba(99,102,241,0.15)' },
+  { id:'oct', label:'Octal',   base:8,  color:'#8b5cf6', fill:'rgba(139,92,246,0.15)' },
+  { id:'duo', label:'Duo',     base:12, color:'#22d3ee', fill:'rgba(34,211,238,0.15)' },
+  { id:'hex', label:'Hex',     base:16, color:'#10b981', fill:'rgba(16,185,129,0.15)' },
+  { id:'vig', label:'Vig',     base:20, color:'#f59e0b', fill:'rgba(245,158,11,0.15)' },
+  { id:'sex', label:'Sex-60',  base:60, color:'#f43f5e', fill:'rgba(244,63,94,0.15)'  },
+];
+
+let ringAnim = 0;
+let ringDecVal = null;
+
+function drawRing() {
+  ringAnim += 0.008;
+  const ctx = ringCtx;
+  const cx = RING_SIZE/2, cy = RING_SIZE/2;
+  ctx.clearRect(0, 0, RING_SIZE, RING_SIZE);
+
+  const radii = [210, 178, 148, 120, 94, 70];
+
+  RING_SYSTEMS.forEach((sys, i) => {
+    const r = radii[i];
+    const trackAlpha = 0.08;
+
+    // Track
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.strokeStyle = sys.color.replace(')', ',0.1)').replace('rgb', 'rgba').replace('#', '').replace(/^(.{6})$/, (m) => `rgba(${parseInt(m.slice(0,2),16)},${parseInt(m.slice(2,4),16)},${parseInt(m.slice(4,6),16)},0.10)`);
+    // simpler:
+    ctx.strokeStyle = sys.color + '1a';
+    ctx.lineWidth = 12;
+    ctx.stroke();
+
+    // Arc fill based on value
+    if (ringDecVal !== null && ringDecVal >= 0n) {
+      let fraction = 0;
+      const n = Number(ringDecVal);
+      if (n > 0) {
+        // compute how many digits in this base, use that as progress
+        const maxDigits = sys.base === 2 ? 32 : sys.base <= 8 ? 12 : sys.base <= 16 ? 10 : 8;
+        const digits = n === 0 ? 0 : Math.floor(Math.log(n) / Math.log(sys.base)) + 1;
+        fraction = Math.min(digits / maxDigits, 1);
+      }
+
+      if (fraction > 0) {
+        const startAngle = -Math.PI/2;
+        const endAngle   = startAngle + fraction * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, startAngle, endAngle);
+        ctx.strokeStyle = sys.color;
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+        ctx.lineCap = 'butt';
+
+        // Dot at end
+        const ex = cx + r * Math.cos(endAngle);
+        const ey = cy + r * Math.sin(endAngle);
+        ctx.beginPath();
+        ctx.arc(ex, ey, 5, 0, Math.PI*2);
+        ctx.fillStyle = sys.color;
+        ctx.shadowColor = sys.color;
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    // Rotating dash marker
+    const markerAngle = ringAnim * (i % 2 === 0 ? 1 : -1) * (0.3 + i * 0.05);
+    const mx = cx + r * Math.cos(markerAngle);
+    const my = cy + r * Math.sin(markerAngle);
+    ctx.beginPath();
+    ctx.arc(mx, my, 2, 0, Math.PI*2);
+    ctx.fillStyle = sys.color + '66';
+    ctx.fill();
+
+    // Label
+    const labelAngle = -Math.PI/2 - 0.1;
+    const lx = cx + (r + 1) * Math.cos(labelAngle) - 24;
+    const ly = cy + (r + 1) * Math.sin(labelAngle) - 8;
+    ctx.font = '500 10px Fira Code, monospace';
+    ctx.fillStyle = sys.color + 'cc';
+    ctx.fillText(sys.label, lx + 26, ly + 4);
+  });
+
+  // Center circle
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 55);
+  grad.addColorStop(0, 'rgba(99,102,241,0.15)');
+  grad.addColorStop(1, 'rgba(99,102,241,0.02)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, 55, 0, Math.PI*2);
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(cx, cy, 55, 0, Math.PI*2);
+  ctx.strokeStyle = 'rgba(99,102,241,0.2)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  // Center text
+  if (ringDecVal !== null) {
+    const txt = ringDecVal.toString(10);
+    ctx.font = `600 ${txt.length > 6 ? 14 : txt.length > 3 ? 18 : 22}px Fira Code, monospace`;
+    ctx.fillStyle = '#a5b4fc';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(txt, cx, cy);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  } else {
+    ctx.font = '18px Fira Code, monospace';
+    ctx.fillStyle = 'rgba(148,163,184,0.3)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('∑', cx, cy);
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  requestAnimationFrame(drawRing);
+}
+drawRing();
+
+/* ════════════════════════════════════════════════════════════
+   CONVERTER ENGINE
+════════════════════════════════════════════════════════════ */
+'use strict';
+
+let decimalValue = null; // BigInt | null
+
+const SYSTEMS = [
+  { id:'bin', base:2,  label:'Binary',      regex:/^[01]*$/,        err:'"$c" is invalid in Base-2 — only 0 and 1 allowed' },
+  { id:'oct', base:8,  label:'Octal',       regex:/^[0-7]*$/,       err:'"$c" is invalid in Base-8 — only digits 0–7 allowed' },
+  { id:'dec', base:10, label:'Decimal',     regex:/^[0-9]*$/,       err:'"$c" is invalid in Base-10 — only digits 0–9 allowed' },
+  { id:'duo', base:12, label:'Duodecimal',  regex:/^[0-9ABab]*$/,   err:'"$c" is invalid in Base-12 — digits 0–9, A, B only' },
+  { id:'hex', base:16, label:'Hexadecimal', regex:/^[0-9A-Fa-f]*$/, err:'"$c" is invalid in Base-16 — digits 0–9, A–F only' },
+  { id:'vig', base:20, label:'Vigesimal',   regex:/^[0-9A-Ja-j]*$/, err:'"$c" is invalid in Base-20 — digits 0–9, A–J only' },
+];
+
+/* ── Encode / Decode ── */
+function vigEncode(n) {
+  if (n === 0n) return '0';
+  const d = '0123456789ABCDEFGHIJ';
+  let s = '';
+  while (n > 0n) { s = d[Number(n % 20n)] + s; n = n / 20n; }
+  return s;
+}
+function vigDecode(str) {
+  const d = '0123456789ABCDEFGHIJ';
+  let v = 0n;
+  for (const c of str.toUpperCase()) { const i = d.indexOf(c); if (i < 0) throw new Error(`Bad char: ${c}`); v = v * 20n + BigInt(i); }
+  return v;
+}
+function sexEncode(n) {
+  if (n === 0n) return '0';
+  const p = [];
+  while (n > 0n) { p.unshift(String(Number(n % 60n))); n = n / 60n; }
+  return p.join(':');
+}
+function sexDecode(str) {
+  const parts = str.split(':');
+  if (!parts.length || (parts.length === 1 && parts[0] === '')) throw new Error('Empty input');
+  let v = 0n;
+  for (const p of parts) {
+    if (p === '') throw new Error('Empty segment between colons');
+    const n = parseInt(p, 10);
+    if (isNaN(n)) throw new Error(`"${p}" is not a valid number`);
+    if (n < 0 || n > 59) throw new Error(`Segment "${p}" exceeds 59 — each block must be 0–59`);
+    v = v * 60n + BigInt(n);
+  }
+  return v;
+}
+
+/* ── Roman ── */
+const ROM = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+function toRoman(n) {
+  if (typeof n === 'bigint') n = Number(n);
+  if (!Number.isInteger(n) || n < 1 || n > 3999) return null;
+  let r = '', orig = n;
+  for (const [v, s] of ROM) while (n >= v) { r += s; n -= v; }
+  // decomposition
+  const decomp = [];
+  n = orig;
+  for (const [v, s] of ROM) while (n >= v) { decomp.push([s, v]); n -= v; }
+  return { str: r, decomp };
+}
+
+/* ── DOM helpers ── */
+const $ = id => document.getElementById(id);
+function inp(id) { return $('inp-' + id); }
+function card(id) { return $('card-' + id); }
+function err(id) { return $('err-' + id); }
+function fill(id) { return $('fill-' + id); }
+
+function showErr(id, msg) {
+  inp(id).classList.add('is-error');
+  card(id).classList.add('has-error');
+  card(id).classList.remove('is-active');
+  const e = err(id); e.textContent = msg; e.classList.add('show');
+  setStatus('err', `${msg}`);
+}
+function clearErr(id) {
+  inp(id).classList.remove('is-error');
+  card(id).classList.remove('has-error');
+  const e = err(id); e.textContent = ''; e.classList.remove('show');
+}
+function setActive(id) {
+  document.querySelectorAll('.card').forEach(c => c.classList.remove('is-active'));
+  const c = card(id);
+  if (c && !c.classList.contains('has-error')) c.classList.add('is-active');
+}
+function setStatus(type, text) {
+  const bar = $('statusBar');
+  bar.className = 'status-bar' + (type ? ' ' + type : '');
+  $('statusText').textContent = text;
+}
+function setFill(id, pct) {
+  const f = fill(id);
+  if (f) f.style.width = Math.min(100, pct) + '%';
+}
+
+/* ── Live Badge ── */
+function updateBadge(n) {
+  const badge = $('liveBadge');
+  const val   = $('liveVal');
+  if (n === null) {
+    badge.classList.remove('active');
+    val.textContent = '—';
+    ringDecVal = null;
+  } else {
+    badge.classList.add('active');
+    val.textContent = 'dec: ' + n.toString(10);
+    ringDecVal = n;
+  }
+}
+
+/* ── Sex segments ── */
+function updateSexSegs(str) {
+  const wrap = $('sex-segs');
+  if (!str || str === '0') { wrap.innerHTML = ''; return; }
+  const parts = str.split(':');
+  wrap.innerHTML = parts.map((p, i) => {
+    const pow = parts.length - 1 - i;
+    return `<span class="sex-seg active"><b>${p}</b> × 60<sup>${pow}</sup></span>`;
+  }).join('');
+}
+
+/* ── Roman output ── */
+function updateRoman(n) {
+  const valEl   = $('romanValue');
+  const lockEl  = $('romanLocked');
+  const decompEl = $('romanDecomp');
+  const badge   = $('romanBadge');
+  const c       = $('card-roman');
+
+  if (n === null) {
+    valEl.textContent = '—'; valEl.className = 'roman-value empty';
+    lockEl.classList.remove('show');
+    decompEl.innerHTML = '';
+    badge.textContent = '1 – 3,999';
+    c.classList.remove('has-error');
+    return;
+  }
+
+  const res = toRoman(n);
+  if (res === null) {
+    valEl.textContent = '';
+    valEl.className = 'roman-value empty';
+    lockEl.classList.add('show');
+    decompEl.innerHTML = '';
+    badge.textContent = 'Out of range';
+    c.style.opacity = '0.55';
+    c.classList.add('has-error');
+  } else {
+    valEl.textContent = res.str;
+    valEl.className = 'roman-value';
+    lockEl.classList.remove('show');
+    c.style.opacity = '';
+    c.classList.remove('has-error');
+    badge.textContent = '1 – 3,999';
+    decompEl.innerHTML = res.decomp.map(([sym, val], i) =>
+      `<span class="roman-pill" style="animation-delay:${i*0.04}s">
+        <span class="pill-sym">${sym}</span>
+        <span class="pill-val">= ${val}</span>
+      </span>`
+    ).join('');
+  }
+}
+
+/* ── Fill percent ── */
+function calcFill(id, n) {
+  if (n === null || n === 0n) return 0;
+  const sys = SYSTEMS.find(s => s.id === id);
+  if (!sys) return 0;
+  const num = Number(n);
+  const maxDigits = sys.base <= 2 ? 32 : sys.base <= 8 ? 12 : sys.base <= 16 ? 10 : 8;
+  const digits = Math.floor(Math.log(num) / Math.log(sys.base)) + 1;
+  return Math.min(100, (digits / maxDigits) * 100);
+}
+
+/* ── Update all outputs ── */
+function updateAll(sourceId) {
+  if (decimalValue === null) {
+    SYSTEMS.forEach(s => { if (s.id !== sourceId) { inp(s.id).value = ''; clearErr(s.id); setFill(s.id, 0); } });
+    if (sourceId !== 'sex') { $('inp-sex').value = ''; clearErr('sex'); $('sex-segs').innerHTML = ''; setFill('sex', 0); }
+    updateRoman(null);
+    updateBadge(null);
+    setStatus('', 'Ready — type a number in any field above');
+    return;
+  }
+
+  const n = decimalValue;
+
+  SYSTEMS.forEach(s => {
+    if (s.id === sourceId) return;
+    let v;
+    switch(s.id) {
+      case 'vig': v = vigEncode(n); break;
+      case 'duo': v = n.toString(12).toUpperCase(); break;
+      case 'dec': v = n.toString(10); break;
+      default:    v = n.toString(s.base).toUpperCase();
+    }
+    inp(s.id).value = v;
+    clearErr(s.id);
+    setFill(s.id, calcFill(s.id, n));
+  });
+
+  if (sourceId !== 'sex') {
+    const sv = sexEncode(n);
+    $('inp-sex').value = sv;
+    clearErr('sex');
+    updateSexSegs(sv);
+    setFill('sex', Math.min(100, (sv.split(':').length / 5) * 100));
+  }
+
+  updateRoman(n);
+  updateBadge(n);
+  setStatus('ok', `Decimal ${n.toString(10)} · Hex ${n.toString(16).toUpperCase()} · Binary ${n.toString(2)} · Octal ${n.toString(8)}`);
+}
+
+/* ── Positional handlers ── */
+SYSTEMS.forEach(sys => {
+  const i = inp(sys.id);
+  const c = card(sys.id);
+
+  i.addEventListener('focus', () => { setActive(sys.id); });
+  i.addEventListener('blur',  () => { if (!c.classList.contains('has-error')) c.classList.remove('is-active'); });
+
+  i.addEventListener('input', () => {
+    const raw = i.value.trim();
+    clearErr(sys.id);
+
+    if (raw === '') {
+      decimalValue = null;
+      updateAll(sys.id);
+      setFill(sys.id, 0);
+      return;
+    }
+
+    // Find illegal char
+    const allowedSet = new RegExp('^' + sys.regex.source.replace('^','').replace('*$','') + '$');
+    let badChar = null;
+    for (const ch of raw) if (!allowedSet.test(ch)) { badChar = ch; break; }
+
+    if (badChar !== null) {
+      showErr(sys.id, sys.err.replace('$c', badChar));
+      setFill(sys.id, 0);
+      return;
+    }
+
+    try {
+      let val;
+      switch(sys.id) {
+        case 'vig': val = vigDecode(raw); break;
+        case 'duo': val = BigInt(parseInt(raw.toUpperCase(), 12)); break;
+        default:    val = BigInt(parseInt(raw, sys.base));
+      }
+      decimalValue = val;
+      setFill(sys.id, calcFill(sys.id, val));
+      updateAll(sys.id);
+    } catch(e) {
+      showErr(sys.id, `Could not parse as ${sys.label}: ${e.message}`);
+    }
+  });
+});
+
+/* ── Sexagesimal ── */
+const sexInp  = $('inp-sex');
+const sexCard = $('card-sex');
+
+sexInp.addEventListener('focus', () => { setActive('sex'); });
+sexInp.addEventListener('blur',  () => { if (!sexCard.classList.contains('has-error')) sexCard.classList.remove('is-active'); });
+
+sexInp.addEventListener('input', () => {
+  const raw = sexInp.value.trim();
+  clearErr('sex');
+
+  if (raw === '') {
+    decimalValue = null;
+    $('sex-segs').innerHTML = '';
+    updateAll('sex');
+    setFill('sex', 0);
+    return;
+  }
+
+  const badChar = [...raw].find(c => !/[0-9:]/.test(c));
+  if (badChar !== undefined) {
+    showErr('sex', `"${badChar}" is invalid — only digits 0–9 and colons allowed`);
+    setFill('sex', 0);
+    $('sex-segs').innerHTML = '';
+    return;
+  }
+
+  try {
+    const val = sexDecode(raw);
+    decimalValue = val;
+    updateSexSegs(raw);
+    setFill('sex', Math.min(100, (raw.split(':').length / 5) * 100));
+    updateAll('sex');
+  } catch(e) {
+    showErr('sex', `${e.message}`);
+    $('sex-segs').innerHTML = '';
+  }
+});
+
+/* ── Clear All ── */
+$('btnClear').addEventListener('click', () => {
+  decimalValue = null;
+  SYSTEMS.forEach(s => {
+    inp(s.id).value = '';
+    clearErr(s.id);
+    card(s.id).classList.remove('is-active','has-error');
+    setFill(s.id, 0);
+  });
+  $('inp-sex').value = '';
+  clearErr('sex');
+  $('sex-segs').innerHTML = '';
+  sexCard.classList.remove('is-active','has-error');
+  setFill('sex', 0);
+  updateRoman(null);
+  updateBadge(null);
+  setStatus('', 'Cleared — enter a value above');
+
+  const btn = $('btnClear');
+  btn.style.borderColor = '#10b981';
+  btn.style.color = '#10b981';
+  setTimeout(() => { btn.style.borderColor = ''; btn.style.color = ''; }, 700);
+});
+
+/* ── Init ── */
+setStatus('', 'Ready — type a number in any field above');
+</script>
+</body>
+</html>
